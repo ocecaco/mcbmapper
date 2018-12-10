@@ -50,6 +50,15 @@ var fillArea =
     new NativeFunction(getAddress('_ZN15OceanMixerLayer8fillAreaER9LayerDataiiii'),
                        'void', ['pointer', 'pointer', 'int', 'int', 'int', 'int']);
 
+var VillageFeature = new NativeFunction(getAddress('_ZN14VillageFeatureC2Ej'), 'void', ['pointer', 'int']);
+
+var setupChunkSeed = new NativeFunction(getAddress('_ZN12LargeFeature14setupChunkSeedEjR6Randomii'), 'void', ['int', 'pointer', 'int', 'int']);
+
+var isFeatureChunk = new NativeFunction(getAddress('_ZN14VillageFeature14isFeatureChunkEP11BiomeSourceR6RandomRK8ChunkPos'),
+                                        'int',
+                                        ['pointer', 'pointer', 'pointer', 'pointer']);
+
+
 function allocLayerData(size) {
     var layerData = Memory.alloc(8 + size);
     var left = layerData.add(8);
@@ -101,13 +110,29 @@ function getBiomes(layer, layerData, x, z) {
     return biomes;
 }
 
+function findVillages(feature, random, source, pos, seed) {
+    VillageFeature(feature, seed);
+
+    for (var i = -250; i < 250; i++) {
+        for (var j = -250; j < 250; j++) {
+            setupChunkSeed(seed, random, i, j);
+            Memory.writeS32(pos, i);
+            Memory.writeS32(pos.add(4), j);
+            var isVillage = isFeatureChunk(feature, source, random, pos);
+            if (isVillage === 1) {
+                console.log('Village at ' + i * 16 + ' ' + j * 16);
+            }
+        }
+    }
+}
+
 function sendSeedData(layerData, seed) {
     var stuff = createSourceAndLayers(seed);
     var source = stuff.biomeSource;
     var spawn = findSpawn(source);
     var layer = stuff.layer1;
 
-    var radius = 10;
+    var radius = 4;
 
     var x = Math.round(spawn[0] / 4) - radius * BIOME_TILE_SIZE;
     var z = Math.round(spawn[1] / 4) - radius * BIOME_TILE_SIZE;
@@ -116,6 +141,11 @@ function sendSeedData(layerData, seed) {
     var maxJ = radius * 2;
 
     send({'type': 'seed', 'seed': seed, 'x': x, 'z': z, 'max_i': maxI, 'max_j': maxJ});
+
+    var feature = Memory.alloc(4096);
+    var random = Memory.alloc(4096);
+    var pos = Memory.alloc(4096);
+    findVillages(feature, random, source, pos, seed);
 
     for (var i = 0; i < maxI; i++) {
         for (var j = 0; j < maxJ; j++) {
