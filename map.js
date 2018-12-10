@@ -14,18 +14,6 @@ function getExportMapping(module) {
     return getAddress;
 }
 
-function deadbeef(size) {
-    var rounded = Math.ceil(size / 4);
-    var mem = Memory.alloc(rounded);
-
-    var beef = new NativePointer("0xdeadbeef");
-    for (var offset = 0; offset < rounded / 4; offset += 4) {
-        Memory.writePointer(mem.add(offset), beef);
-    }
-
-    return mem;
-}
-
 var module = 'libminecraftpe.so';
 var baseAddress = Module.findBaseAddress(module);
 var getAddress = getExportMapping(module);

@@ -3,7 +3,7 @@ import sys
 import numpy as np
 
 session = frida.get_usb_device().attach("com.mojang.minecraftpe")
-# session.enable_jit()
+session.enable_jit()
 
 with open('map.js') as f:
     script = session.create_script(f.read())
