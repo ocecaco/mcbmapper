@@ -71,35 +71,6 @@ function createSourceAndLayers(seed) {
     };
 }
 
-// // var setupChunkSeedA = getAddress('_ZN12LargeFeature14setupChunkSeedEjR6Randomii');
-// // var setupChunkSeed = new NativeFunction(setupChunkSeedA, 'void', ['int', 'pointer', 'int', 'int']);
-
-// // var isFeatureChunkA = getAddress('_ZN14VillageFeature14isFeatureChunkEP11BiomeSourceR6RandomRK8ChunkPos');
-// // var isFeatureChunk = new NativeFunction(isFeatureChunkA, 'int', ['pointer', 'pointer', 'pointer', 'pointer']);
-
-// // var isFeatureChunkA = getAddress('_ZN16MineshaftFeature14isFeatureChunkEP11BiomeSourceR6RandomRK8ChunkPos');
-// // var isFeatureChunk = new NativeFunction(isFeatureChunkA, 'int', ['pointer', 'pointer', 'pointer', 'pointer']);
-
-// // var VillageFeatureA = getAddress('_ZN14VillageFeatureC2Ej');
-// // var VillageFeature = new NativeFunction(VillageFeatureA, 'void', ['pointer', 'int']);
-
-// // var VillageFeatureA = getAddress('_ZN16StructureFeatureC2Ej');
-// // var VillageFeature = new NativeFunction(VillageFeatureA, 'void', ['pointer', 'int']);
-
-// function createBiomeSource(seed) {
-//     var mem = Memory.alloc(128);
-//     biomeSourceConstructor(mem, seed, 1, 0);
-//     getSpawn(mem.add(52), mem);
-//     return mem;
-// }
-
-// function layerFromBiomeSource(source) {
-//     return Memory.readPointer(source.add(4));
-// }
-function vtable(ptr) {
-    return Memory.readPointer(ptr).sub(baseAddress);
-}
-
 function findSpawn(source) {
     var spawnX = 0;
     var spawnZ = 0;
@@ -153,67 +124,19 @@ function sendSeedData(layerData, seed) {
     send({'type': 'done'})
 }
 
-// function main() {
-//     console.log('start');
-
-
-//     // var source = createBiomeSource(seed);
-//     // VillageFeature(feature, seed);
-//     // for (var i = -250; i <= 250; i++) {
-//     //     for (var j = -250; j <= 250; j++) {
-//     //         setupChunkSeed(seed, random, i, j);
-//     //         Memory.writeS32(pos, i);
-//     //         Memory.writeS32(pos.add(4), j); // maybe swap
-//     //         var isVillage = isFeatureChunk(feature, source, random, pos);
-//     //         if (isVillage === 1) {
-//     //             console.log('' + i * 16 + ' ' + j * 16);
-//     //         }
-//     //     }
-//     // }
-
-//     for (var seed = 60000; seed < 70000; seed++) {
-//         sendSeedData(layerData, seed);
-//     }
-
-//     console.log('stop');
-// }
-function intercept() {
-    var addr = getAddress('_ZN11BiomeSourceC2EjR5BiomeSt10shared_ptrI5LayerES4_');
-    Interceptor.attach(addr, {
-        onEnter: function (args) {
-            console.log(hexdump(args[3]));
-            console.log(hexdump(args[4]));
-        }
-    });
-
-    var addr = getAddress('_ZN18OverworldDimension19createDefaultLayersExRSt10shared_ptrI5LayerES3_13GeneratorTypeb');
-    Interceptor.attach(addr, {
-        onEnter: function (args) {
-            console.log('createdefaultlayers');
-            console.log('layer1 location: ' + args[2]);
-            this.layer1 = args[2];
-            console.log('layer2 location: ' + args[3]);
-            this.layer2 = args[3];
-        },
-        onLeave: function (retval) {
-            console.log('layer1 data: ' + Memory.readPointer(this.layer1));
-            console.log('layer1 addit: ' + Memory.readPointer(this.layer1.add(4)));
-            console.log('layer1 vtable: ' + vtable(Memory.readPointer(this.layer1)));
-
-            console.log('layer2 data: ' + Memory.readPointer(this.layer2));
-            console.log('layer2 addit: ' + Memory.readPointer(this.layer2.add(4)));
-            console.log('layer2 vtable: ' + vtable(Memory.readPointer(this.layer2)));
-        }
-    });
-}
-
 function main() {
-    console.log('foo');
+    console.log('start');
+
     var layerData = allocLayerData(1000000);
-    var seed = 1337;
-    sendSeedData(layerData, seed);
+
+    var start = 12345678;
+    var count = 10000;
+    for (var seed = start; seed < start + count; seed++) {
+        sendSeedData(layerData, seed);
+    }
+
+    console.log('stop');
 }
 
 console.log('hook');
-console.log(baseAddress);
 setTimeout(main, 500);

@@ -18,7 +18,6 @@ biomes = None
 
 def on_message(message, data):
     global seed, x, z, biomes
-    print(message)
     payload = message['payload']
     message_type = payload['type']
 
@@ -35,7 +34,7 @@ def on_message(message, data):
         arr = np.frombuffer(data, dtype=np.uint32).reshape((TILE_SIZE, TILE_SIZE))
         biomes[j*20:(j+1)*20, i*20:(i+1)*20] = arr
     elif message_type == 'done':
-        np.save('data2/biomedata_{}_s_{}_{}.bio'.format(seed, x, z), biomes)
+        np.save('data/biomedata_{}_s_{}_{}.bio'.format(seed, x, z), biomes)
         print(seed)
         biomes = None
     else:
