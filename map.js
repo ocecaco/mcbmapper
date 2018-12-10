@@ -21,7 +21,7 @@ function getExportMapping(module) {
 var module = 'libminecraftpe.so';
 var baseAddress = Module.findBaseAddress(module);
 var getAddress = getExportMapping(module);
-var biomePlains = Memory.readPointer(baseAddress.add(new NativePointer("0x3267358"))); // Biomes::mPlains
+var biomePlains = Memory.readPointer(getAddress('_ZN13VanillaBiomes7mPlainsE'));
 
 var BIOME_TILE_SIZE = 20;
 
