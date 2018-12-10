@@ -72,7 +72,7 @@ function createSourceAndLayers(seed) {
     var layer1 = Memory.alloc(8);
     var layer2 = Memory.alloc(8);
     createDefaultLayers(seed, layer1, layer2, 1, 0);
-    var source = Memory.alloc(8192);
+    var source = Memory.alloc(512);
     biomeSourceConstructor(source, seed, biomePlains, Memory.dup(layer1, 8), Memory.dup(layer2, 8));
 
     return {
