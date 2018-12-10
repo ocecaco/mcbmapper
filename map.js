@@ -8,7 +8,11 @@ function getExportMapping(module) {
     }
 
     function getAddress(exportName) {
-        return exportsMapping[exportName];
+        if (exportsMapping.hasOwnProperty(exportName)) {
+            return exportsMapping[exportName];
+        } else {
+            throw "address not found for name " + exportName;
+        }
     }
 
     return getAddress;
