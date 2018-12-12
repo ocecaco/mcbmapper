@@ -1,6 +1,7 @@
 import frida
 import sys
 import numpy as np
+import msgpack
 
 session = frida.get_usb_device().attach("com.mojang.minecraftpe")
 session.enable_jit()
@@ -14,10 +15,11 @@ seed = None
 x = None
 z = None
 biomes = None
+villages = None
 
 
 def on_message(message, data):
-    global seed, x, z, biomes
+    global seed, x, z, biomes, villages
     payload = message['payload']
     message_type = payload['type']
 
@@ -27,6 +29,7 @@ def on_message(message, data):
         z = payload['z']
         max_i = payload['max_i']
         max_j = payload['max_j']
+        villages = payload['villages']
         biomes = np.zeros((max_j * TILE_SIZE, max_i * TILE_SIZE), dtype=np.uint8)
     elif message_type == 'data':
         i = payload['i']
@@ -34,8 +37,17 @@ def on_message(message, data):
         arr = np.frombuffer(data, dtype=np.uint32).reshape((TILE_SIZE, TILE_SIZE))
         biomes[j*20:(j+1)*20, i*20:(i+1)*20] = arr
     elif message_type == 'done':
-        np.save('data/biomedata_{}_s_{}_{}.bio'.format(seed, x, z), biomes)
+        world_data = {
+            'biomes': biomes.tobytes(),
+            'villages': villages,
+            'x': x,
+            'z': z,
+            'seed': seed
+        }
+        with open('data/' + str(seed), 'wb') as f:
+            msgpack.pack(world_data, f)
         print(seed)
+        print(len(villages))
         biomes = None
     else:
         raise RuntimeError('unknown message type')

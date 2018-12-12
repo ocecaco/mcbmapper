@@ -110,20 +110,23 @@ function getBiomes(layer, layerData, x, z) {
     return biomes;
 }
 
-function findVillages(feature, random, source, pos, seed) {
+function findVillages(feature, random, source, pos, seed, startChunk, stopChunk) {
+    var villages = [];
     VillageFeature(feature, seed);
 
-    for (var i = -250; i < 250; i++) {
-        for (var j = -250; j < 250; j++) {
+    for (var i = startChunk[0]; i < stopChunk[0]; i++) {
+        for (var j = startChunk[1]; j < stopChunk[1]; j++) {
             setupChunkSeed(seed, random, i, j);
             Memory.writeS32(pos, i);
             Memory.writeS32(pos.add(4), j);
             var isVillage = isFeatureChunk(feature, source, random, pos);
             if (isVillage === 1) {
-                console.log('Village at ' + i * 16 + ' ' + j * 16);
+                villages.push([i * 16, j * 16]);
             }
         }
     }
+
+    return villages;
 }
 
 function sendSeedData(layerData, seed) {
@@ -132,7 +135,7 @@ function sendSeedData(layerData, seed) {
     var spawn = findSpawn(source);
     var layer = stuff.layer1;
 
-    var radius = 4;
+    var radius = 7;
 
     var x = Math.round(spawn[0] / 4) - radius * BIOME_TILE_SIZE;
     var z = Math.round(spawn[1] / 4) - radius * BIOME_TILE_SIZE;
@@ -140,12 +143,16 @@ function sendSeedData(layerData, seed) {
     var maxI = radius * 2;
     var maxJ = radius * 2;
 
-    send({'type': 'seed', 'seed': seed, 'x': x, 'z': z, 'max_i': maxI, 'max_j': maxJ});
-
+    var length = 2 * radius * BIOME_TILE_SIZE;
     var feature = Memory.alloc(4096);
     var random = Memory.alloc(4096);
     var pos = Memory.alloc(4096);
-    findVillages(feature, random, source, pos, seed);
+    var startChunk = [Math.floor(x * 4 / 16), Math.floor(x * 4 / 16)];
+    var stopChunk = [Math.ceil((x + length) * 4 / 16),
+                     Math.ceil((z + length) * 4 / 16)];
+    var villages = findVillages(feature, random, source, pos, seed, startChunk, stopChunk);
+
+    send({'type': 'seed', 'seed': seed, 'x': x, 'z': z, 'max_i': maxI, 'max_j': maxJ, 'villages': villages});
 
     for (var i = 0; i < maxI; i++) {
         for (var j = 0; j < maxJ; j++) {
@@ -163,7 +170,7 @@ function main() {
 
     var layerData = allocLayerData(1000000);
 
-    var start = 12345678;
+    var start = 12340000;
     var count = 10000;
     for (var seed = start; seed < start + count; seed++) {
         sendSeedData(layerData, seed);
