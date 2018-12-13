@@ -25,38 +25,73 @@ var biomePlains = Memory.readPointer(getAddress('_ZN13VanillaBiomes7mPlainsE'));
 
 var BIOME_TILE_SIZE = 20;
 
-var biomeSourceConstructor = new NativeFunction(getAddress('_ZN11BiomeSourceC2EjR5BiomeSt10shared_ptrI5LayerES4_'),
+var biomeSourceConstructor = new NativeFunction(getAddress('_ZN11BiomeSourceC2EjRK13BiomeRegistryR5BiomeSt10shared_ptrI5LayerES7_'),
                                                 'void',
-                                                ['pointer',
-                                                 'int32',
-                                                 'pointer',
-                                                 'pointer',
-                                                 'pointer']);
+                                                ['pointer', // this
+                                                 'int32', // seed
+                                                 'pointer', // biomeregistry
+                                                 'pointer', // biome
+                                                 'pointer', // layer1
+                                                 'pointer']); // layer2
 
-var createDefaultLayers = new NativeFunction(getAddress('_ZN18OverworldDimension19createDefaultLayersExRSt10shared_ptrI5LayerES3_13GeneratorTypeb'),
+var createDefaultLayers = new NativeFunction(getAddress('_ZN18OverworldDimension19createDefaultLayersExRK13BiomeRegistryRSt10shared_ptrI5LayerES6_13GeneratorTypeb'),
                                              'void',
-                                             ['int64', 'pointer', 'pointer', 'int32', 'uint32']);
+                                             ['int64', // seed
+                                              'pointer', // biomeregistry
+                                              'pointer', // layer1
+                                              'pointer', // layer2
+                                              'int32', // generatortype
+                                              'uint32']); // bool flag
 
 var findValidSpawnPosition = new NativeFunction(getAddress('_Z22findValidSpawnPositionR11BiomeSourceiiii'),
                                                 'int32',
-                                                ['pointer',
-                                                 'pointer',
-                                                 'int32',
-                                                 'int32',
-                                                 'int32',
-                                                 'int32']);
+                                                ['pointer', // return value
+                                                 'pointer', // biomesource
+                                                 'int32', // x
+                                                 'int32', // z
+                                                 'int32', // ? constant
+                                                 'int32']); // ? constant
+
+var biomeRegistryCtor = new NativeFunction(getAddress('_ZN13BiomeRegistryC2Ev'),
+                                           'void',
+                                           ['pointer']); // this
+
+var initBiomes = new NativeFunction(getAddress('_ZN13VanillaBiomes10initBiomesER13BiomeRegistry'),
+                                    'void',
+                                    ['pointer']); // biomeregistry
+
+var registrationFinished = new NativeFunction(getAddress('_ZN13BiomeRegistry20registrationFinishedEv'),
+                                              'void',
+                                              ['pointer']); // biomeregistry (this)
 
 var fillArea =
     new NativeFunction(getAddress('_ZN15OceanMixerLayer8fillAreaER9LayerDataiiii'),
-                       'void', ['pointer', 'pointer', 'int', 'int', 'int', 'int']);
+                       'void',
+                       ['pointer', // layer
+                        'pointer', // layerdata
+                        'int', // x
+                        'int', // z
+                        'int', // ? constant
+                        'int']); // ? constant
 
-var VillageFeature = new NativeFunction(getAddress('_ZN14VillageFeatureC2Ej'), 'void', ['pointer', 'int']);
+var VillageFeature = new NativeFunction(getAddress('_ZN14VillageFeatureC2Ej'),
+                                        'void',
+                                        ['pointer', // this
+                                         'int']); // seed
 
-var setupChunkSeed = new NativeFunction(getAddress('_ZN12LargeFeature14setupChunkSeedEjR6Randomii'), 'void', ['int', 'pointer', 'int', 'int']);
+var setupChunkSeed = new NativeFunction(getAddress('_ZN12LargeFeature14setupChunkSeedEjR6Randomii'),
+                                        'void',
+                                        ['int', // seed
+                                         'pointer', // random
+                                         'int', // x
+                                         'int']); // z
 
 var isFeatureChunk = new NativeFunction(getAddress('_ZN14VillageFeature14isFeatureChunkEP11BiomeSourceR6RandomRK8ChunkPos'),
                                         'int',
-                                        ['pointer', 'pointer', 'pointer', 'pointer']);
+                                        ['pointer', // feature
+                                         'pointer', // biomesource
+                                         'pointer', // random
+                                         'pointer']); // chunkpos
 
 
 function allocLayerData(size) {
@@ -68,12 +103,12 @@ function allocLayerData(size) {
     return layerData;
 }
 
-function createSourceAndLayers(seed) {
+function createSourceAndLayers(registry, seed) {
     var layer1 = Memory.alloc(8);
     var layer2 = Memory.alloc(8);
-    createDefaultLayers(seed, layer1, layer2, 1, 0);
+    createDefaultLayers(seed, registry, layer1, layer2, 1, 0);
     var source = Memory.alloc(512);
-    biomeSourceConstructor(source, seed, biomePlains, Memory.dup(layer1, 8), Memory.dup(layer2, 8));
+    biomeSourceConstructor(source, seed, registry, biomePlains, Memory.dup(layer1, 8), Memory.dup(layer2, 8));
 
     return {
         biomeSource: source,
@@ -129,13 +164,13 @@ function findVillages(feature, random, source, pos, seed, startChunk, stopChunk)
     return villages;
 }
 
-function sendSeedData(layerData, seed) {
-    var stuff = createSourceAndLayers(seed);
+function sendSeedData(registry, layerData, seed) {
+    var stuff = createSourceAndLayers(registry, seed);
     var source = stuff.biomeSource;
     var spawn = findSpawn(source);
     var layer = stuff.layer1;
 
-    var radius = 7;
+    var radius = 50;
 
     var x = Math.round(spawn[0] / 4) - radius * BIOME_TILE_SIZE;
     var z = Math.round(spawn[1] / 4) - radius * BIOME_TILE_SIZE;
@@ -169,11 +204,15 @@ function main() {
     console.log('start');
 
     var layerData = allocLayerData(1000000);
+    var registry = Memory.alloc(8192);
+    biomeRegistryCtor(registry);
+    initBiomes(registry);
+    registrationFinished(registry);
 
-    var start = 12340000;
-    var count = 10000;
+    var start = 37286;
+    var count = 1;
     for (var seed = start; seed < start + count; seed++) {
-        sendSeedData(layerData, seed);
+        sendSeedData(registry, layerData, seed);
     }
 
     console.log('stop');

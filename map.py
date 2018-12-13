@@ -20,6 +20,7 @@ villages = None
 
 def on_message(message, data):
     global seed, x, z, biomes, villages
+    print(message)
     payload = message['payload']
     message_type = payload['type']
 
@@ -34,6 +35,7 @@ def on_message(message, data):
     elif message_type == 'data':
         i = payload['i']
         j = payload['j']
+        print((i, j))
         arr = np.frombuffer(data, dtype=np.uint32).reshape((TILE_SIZE, TILE_SIZE))
         biomes[j*20:(j+1)*20, i*20:(i+1)*20] = arr
     elif message_type == 'done':
