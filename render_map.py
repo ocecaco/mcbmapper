@@ -2,12 +2,15 @@ import numpy as np
 import json
 from PIL import Image
 import sys
+import msgpack
 
 with open('biomes2.json', 'rb') as f:
     colors = json.load(f)
     colors = {x['id']: x['color'] for x in colors}
 
-biome_data = np.load(sys.argv[1])
+filename = sys.argv[1]
+contents = msgpack.load(open(filename, 'rb'))
+biome_data = np.frombuffer(contents[b'biomes'], dtype=np.uint8).reshape(2000, 2000)
 
 
 def get_color(b, i):
